@@ -2,7 +2,7 @@ import numpy as np
 
 from traits.api import HasTraits, Instance
 from traits.api import observe, Range, Bool, Enum, Float
-from traitsui.api import Item, View, Group
+from traitsui.api import Item, View, Group, VSplit
 from traitsui.api import CancelButton, HGroup, HSplit
 
 
@@ -60,7 +60,7 @@ class Vis(HasTraits):
     ira = Bool(False)
     refl_arr_type = Enum('Coordinate Arrangement', 'Type A',
                          'Type B', 'Type D')
-    view_coxeter_cell = Bool(False)
+    view_cox = Bool(False)
     plane_1_norm_x, plane_1_norm_y, plane_1_norm_z = (Float(0.),
                                                       Float(1.),
                                                       Float(1.))
@@ -85,8 +85,11 @@ class Vis(HasTraits):
 
     x_axis, y_axis, z_axis = None, None, None
     scp_coord_b_1, scp_coord_b_2, scp_coord_b_3 = None, None, None
+    coord_b_1, coord_b_2, coord_b_3 = None, None, None
     scp_abd_1, scp_abd_2, scp_abd_3 = None, None, None
+    abd_1, abd_2, abd_3 = None, None, None
     scp_bd_1, scp_bd_2, scp_bd_3 = None, None, None
+    bd_1, bd_2, bd_3 = None, None, None
 
     @observe('scene.activated')
     def initalize_plot(self, event=None):
@@ -153,6 +156,73 @@ class Vis(HasTraits):
                   + (-(self.plane_3_norm_y/self.plane_3_norm_z))*y)
             z4 = ((-(self.plane_4_norm_x/self.plane_4_norm_z))*x
                   + (-(self.plane_4_norm_y/self.plane_4_norm_z))*y)
+            x_co_b1 = np.zeros_like(x)
+            x_co_b2 = x
+            x_co_b3 = x
+            y_co_b1 = x
+            y_co_b2 = np.zeros_like(y)
+            y_co_b3 = y
+            z_co_b1 = y
+            z_co_b2 = y
+            z_co_b3 = np.zeros_like(x)
+
+            x_abd_1 = x
+            x_abd_2 = x
+            x_abd_3 = x
+            y_abd_1 = y
+            y_abd_2 = y
+            y_abd_3 = x
+            z_abd_1 = y
+            z_abd_2 = x
+            z_abd_3 = y
+
+            x_bd_1 = x
+            x_bd_2 = x
+            x_bd_3 = x
+            y_bd_1 = -x
+            y_bd_2 = y
+            y_bd_3 = y
+            z_bd_1 = y
+            z_bd_2 = -y
+            z_bd_3 = -x
+
+            self.coord_b_1 = self.scene.mlab.mesh(x_co_b1,
+                                                  y_co_b1,
+                                                  z_co_b1)
+            self.coord_b_2 = self.scene.mlab.mesh(x_co_b2,
+                                                  y_co_b2,
+                                                  z_co_b2)
+            self.coord_b_3 = self.scene.mlab.mesh(x_co_b3,
+                                                  y_co_b3,
+                                                  z_co_b3)
+            self.abd_1 = self.scene.mlab.mesh(x_abd_1,
+                                              y_abd_1,
+                                              z_abd_1)
+            self.abd_2 = self.scene.mlab.mesh(x_abd_2,
+                                              y_abd_2,
+                                              z_abd_2)
+            self.abd_3 = self.scene.mlab.mesh(x_abd_3,
+                                              y_abd_3,
+                                              z_abd_3)
+            self.bd_1 = self.scene.mlab.mesh(x_bd_1,
+                                             y_bd_1,
+                                             z_bd_1)
+            self.bd_2 = self.scene.mlab.mesh(x_bd_2,
+                                             y_bd_2,
+                                             z_bd_2)
+            self.bd_3 = self.scene.mlab.mesh(x_bd_3,
+                                             y_bd_3,
+                                             z_bd_3)
+
+            self.coord_b_1.visible = False
+            self.coord_b_2.visible = False
+            self.coord_b_3.visible = False
+            self.abd_1.visible = False
+            self.abd_2.visible = False
+            self.abd_3.visible = False
+            self.bd_1.visible = False
+            self.bd_2.visible = False
+            self.bd_3.visible = False
 
             self.plane_1 = self.scene.mlab.mesh(x, y, z1)
             self.plane_2 = self.scene.mlab.mesh(x, y, z2)
@@ -193,6 +263,7 @@ class Vis(HasTraits):
             self.scp_bd_1.visible = False
             self.scp_bd_2.visible = False
             self.scp_bd_3.visible = False
+
             origin = np.array([0., 0., 0.])
             self.scp_coord_b_1.implicit_plane.widget.origin = origin
             origin = np.array([0., 0.1, 0.])
@@ -423,7 +494,7 @@ class Vis(HasTraits):
             self.line_4.visible = False
             self.plane_4.visible = False
 
-    @observe('ira,refl_arr_type,dim')
+    @observe('ira,refl_arr_type,dim,view_cox')
     def refl_arr(self, event=None):
         self.scp_coord_b_1.implicit_plane.widget.enabled = False
         self.scp_coord_b_2.implicit_plane.widget.enabled = False
@@ -437,6 +508,8 @@ class Vis(HasTraits):
         cond_temp = self.refl_arr_type == 'Coordinate Arrangement'
         cond_1 = cond_temp and self.dim == '3'
         cond_2 = self.refl_arr_type == 'Type A' and self.dim == '3'
+        cond_3 = self.refl_arr_type == 'Type B' and self.dim == '3'
+        cond_4 = self.refl_arr_type == 'Type D' and self.dim == '3'
 
         if self.ira:
             self.show_plane_1 = False
@@ -444,7 +517,7 @@ class Vis(HasTraits):
             self.show_plane_3 = False
             self.show_plane_4 = False
             self.show_axes = False
-        if (self.ira and cond_1):
+        if (self.ira and cond_1 and self.view_cox):
             self.scp_coord_b_1.visible = True
             self.scp_coord_b_2.visible = True
             self.scp_coord_b_3.visible = True
@@ -455,7 +528,7 @@ class Vis(HasTraits):
             self.scp_bd_2.visible = False
             self.scp_bd_3.visible = False
             self.circle.visible = False
-        elif (self.ira and cond_2):
+        elif (self.ira and cond_2 and self.view_cox):
             self.scp_coord_b_1.visible = False
             self.scp_coord_b_2.visible = False
             self.scp_coord_b_3.visible = False
@@ -466,7 +539,7 @@ class Vis(HasTraits):
             self.scp_bd_2.visible = False
             self.scp_bd_3.visible = False
             self.circle.visible = False
-        elif self.ira and self.refl_arr_type == 'Type B' and self.dim == '3':
+        elif (self.ira and cond_3 and self.view_cox):
             self.scp_coord_b_1.visible = True
             self.scp_coord_b_2.visible = True
             self.scp_coord_b_3.visible = True
@@ -477,7 +550,7 @@ class Vis(HasTraits):
             self.scp_bd_2.visible = True
             self.scp_bd_3.visible = True
             self.circle.visible = False
-        elif self.ira and self.refl_arr_type == 'Type D' and self.dim == '3':
+        elif (self.ira and cond_4 and self.view_cox):
             self.scp_coord_b_1.visible = False
             self.scp_coord_b_2.visible = False
             self.scp_coord_b_3.visible = False
@@ -488,7 +561,7 @@ class Vis(HasTraits):
             self.scp_bd_2.visible = True
             self.scp_bd_3.visible = True
             self.circle.visible = False
-        elif self.ira and self.dim == '2':
+        elif (self.ira and self.dim == '2'):
             self.scp_coord_b_1.visible = False
             self.scp_coord_b_2.visible = False
             self.scp_coord_b_3.visible = False
@@ -511,6 +584,54 @@ class Vis(HasTraits):
             self.scp_bd_3.visible = False
             self.circle.visible = False
 
+    @observe('dim,ira,view_cox,refl_arr_type')
+    def cox_cell(self, event=None):
+        self.coord_b_1.visible = False
+        self.coord_b_2.visible = False
+        self.coord_b_3.visible = False
+        self.abd_1.visible = False
+        self.abd_2.visible = False
+        self.abd_3.visible = False
+        self.bd_1.visible = False
+        self.bd_2.visible = False
+        self.bd_3.visible = False
+        c_temp = self.ira and self.dim == '3' and (not self.view_cox)
+        cond_1 = c_temp and self.refl_arr_type == 'Coordinate Arrangement'
+        cond_2 = c_temp and self.refl_arr_type == 'Type A'
+        cond_3 = c_temp and self.refl_arr_type == 'Type B'
+        cond_4 = c_temp and self.refl_arr_type == 'Type D'
+        if cond_1:
+            self.coord_b_1.visible = True
+            self.coord_b_2.visible = True
+            self.coord_b_3.visible = True
+        elif cond_2:
+            self.abd_1.visible = True
+            self.abd_2.visible = True
+            self.abd_3.visible = True
+        elif cond_3:
+            self.coord_b_1.visible = True
+            self.coord_b_2.visible = True
+            self.coord_b_3.visible = True
+            self.abd_1.visible = True
+            self.abd_2.visible = True
+            self.abd_3.visible = True
+            self.bd_1.visible = True
+            self.bd_2.visible = True
+            self.bd_3.visible = True
+        elif cond_4:
+            self.abd_1.visible = True
+            self.abd_2.visible = True
+            self.abd_3.visible = True
+            self.bd_1.visible = True
+            self.bd_2.visible = True
+            self.bd_3.visible = True
+        elif self.ira and self.dim == '2':
+            self.view_cox = True
+        elif not self.ira:
+            self.view_cox = False
+        else:
+            pass
+
     @observe('dim,ira,dihedral_arrangement_n')
     def dihedral_arr(self, event=None):
         if self.dim == '2' and self.ira:
@@ -524,16 +645,17 @@ class Vis(HasTraits):
             self.dihedral_points_e.visible = False
             self.dihedral_points_o.visible = False
     # The layout of the dialog created
-    view = View(Item('scene', editor=SceneEditor(scene_class=MayaviScene),
-                     height=250, width=500, show_label=False),
-                HSplit(
-                Group(
+    view = View(HSplit(Item('scene',
+                            editor=SceneEditor(scene_class=MayaviScene),
+                            height=250, width=500, show_label=False),
+                VSplit(HSplit(
+                    Group(
                         Item(name='show_axes', label='Show Axes'),
                         Item(name='dim', label='Ambient Space Dim.'),
                         label='General',
                         show_border=True
                      ),
-                Group(
+                    Group(
                         Item(name='ira',
                              label='Reflection Arrangement Mode'),
                         Item(name='dihedral_arrangement_n',
@@ -542,10 +664,13 @@ class Vis(HasTraits):
                         Item(name='refl_arr_type',
                              enabled_when='ira is True and dim=="3"',
                              label='Arrangement Type'),
+                        Item(name='view_cox',
+                             label='View Coxeter Cell',
+                             enabled_when='ira is True and dim=="3"'),
                         label='Reflection Arrangements',
                         show_border=True
                      )),
-                HGroup(
+                    HGroup(
                         Item(name='plane_1_norm_x', label='x'),
                         Item(name='plane_1_norm_y', label='y'),
                         Item(name='plane_1_norm_z', label='z',
@@ -555,7 +680,7 @@ class Vis(HasTraits):
                         show_border=True,
                         enabled_when='ira is False'
                         ),
-                HGroup(
+                    HGroup(
                         Item(name='plane_2_norm_x', label='x'),
                         Item(name='plane_2_norm_y', label='y'),
                         Item(name='plane_2_norm_z', label='z',
@@ -565,7 +690,7 @@ class Vis(HasTraits):
                         show_border=True,
                         enabled_when='ira is False'
                         ),
-                HGroup(
+                    HGroup(
                         Item(name='plane_3_norm_x', label='x'),
                         Item(name='plane_3_norm_y', label='y'),
                         Item(name='plane_3_norm_z', label='z',
@@ -575,7 +700,7 @@ class Vis(HasTraits):
                         show_border=True,
                         enabled_when='ira is False'
                         ),
-                HGroup(
+                    HGroup(
                         Item(name='plane_4_norm_x', label='x'),
                         Item(name='plane_4_norm_y', label='y'),
                         Item(name='plane_4_norm_z', label='z',
@@ -584,7 +709,7 @@ class Vis(HasTraits):
                         label='Hyperplane 4 (Normal)',
                         show_border=True,
                         enabled_when='ira is False'
-                        ),
+                        ))),
                 resizable=True,
                 buttons=[CancelButton]
                 )
